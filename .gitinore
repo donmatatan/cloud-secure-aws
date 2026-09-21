@@ -1,0 +1,16 @@
+# Terraform local state y cache
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Credenciales y variables sensibles
+*.tfvars
+!terraform.tfvars.example
+credentials
+*.pem
+
+# Archivos de sistema y editores
+.DS_Store
+.vscode/
+.idea/
