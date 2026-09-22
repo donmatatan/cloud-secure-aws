@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.2.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -12,7 +13,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Referenciamos el bucket S3 que creamos por AWS CLI para evitar llamadas prohibidas por la SCP
+# Referenciamos el bucket S3 que creamos por AWS CLI
 data "aws_s3_bucket" "secure_bucket" {
   bucket = "blue-wave-secure-bucket-bw"
 }
@@ -21,7 +22,6 @@ data "aws_s3_bucket" "secure_bucket" {
 data "aws_s3_bucket" "logs_bucket" {
   bucket = "blue-wave-cloudtrail-logs-bw"
 }
-
 
 # -----------------------------------------------------------------------------
 # LECCIÓN 2: AUDITORÍA DE EVENTOS (AWS CloudTrail)
@@ -61,17 +61,16 @@ resource "aws_s3_bucket_policy" "cloudtrail_s3_policy" {
   })
 }
 
-# 2. Configuración de CloudTrail apuntando al Bucket de Logs
+# 2. Configuración de CloudTrail apuntando al Bucket de Logs y a CloudWatch Logs
 resource "aws_cloudtrail" "audit_trail" {
-  name                          = "blue-wave-audit-trail"
-  s3_bucket_name                = data.aws_s3_bucket.logs_bucket.id
+  name                           = "blue-wave-audit-trail"
+  s3_bucket_name                 = data.aws_s3_bucket.logs_bucket.id
   include_global_service_events = true
-  is_multi_region_trail         = false
-  enable_logging                = true
+  is_multi_region_trail          = false
+  enable_logging                 = true
 
-  # --- AGREGAR ESTAS DOS LÍNEAS PARA LA LECCIÓN 4 ---
-  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail_log_group.arn}:*"
-  cloud_watch_logs_role_arn     = data.aws_iam_role.lab_role.arn
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail_log_group.arn}:*"
+  cloud_watch_logs_role_arn  = data.aws_iam_role.lab_role.arn
 
   depends_on = [aws_s3_bucket_policy.cloudtrail_s3_policy]
 
@@ -81,6 +80,7 @@ resource "aws_cloudtrail" "audit_trail" {
     ManagedBy   = "Terraform"
   }
 }
+
 # -----------------------------------------------------------------------------
 # LECCIÓN 3: GOBERNANZA Y CUMPLIMIENTO (AWS Config)
 # -----------------------------------------------------------------------------
@@ -89,10 +89,6 @@ resource "aws_cloudtrail" "audit_trail" {
 data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
-
-# -----------------------------------------------------------------------------
-# REGLAS DE CUMPLIMIENTO (AWS Config Managed Rules)
-# -----------------------------------------------------------------------------
 
 # Regla 1: Validar que todos los buckets S3 tengan Bloqueo de Acceso Público
 resource "aws_config_config_rule" "s3_bucket_public_read_prohibited" {
@@ -132,19 +128,12 @@ resource "aws_cloudwatch_log_group" "cloudtrail_log_group" {
   }
 }
 
-# 2. Actualización de CloudTrail para enviar eventos a CloudWatch Logs
-# (Aprovecha la declaración de aws_cloudtrail.audit_trail en la Lección 2)
-# Nota: Asegúrate de vincular los parámetros de CloudWatch en tu recurso aws_cloudtrail existente:
-# cloudwatch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail_log_group.arn}:*"
-# cloudwatch_logs_role_arn  = data.aws_iam_role.lab_role.arn
-
-# 3. Tema de Notificación SNS para Alertas de Seguridad
+# 2. Tema de Notificación SNS para Alertas de Seguridad
 resource "aws_sns_topic" "security_alerts" {
   name = "blue-wave-security-alerts"
 }
 
-# 4. Suscripción por Correo Electrónico al Tema SNS
-# Reemplaza 'tu-correo@ejemplo.com' por tu dirección de correo real
+# 3. Suscripción por Correo Electrónico al Tema SNS
 resource "aws_sns_topic_subscription" "email_subscription" {
   topic_arn = aws_sns_topic.security_alerts.arn
   protocol  = "email"
