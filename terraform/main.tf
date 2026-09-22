@@ -77,3 +77,37 @@ resource "aws_cloudtrail" "audit_trail" {
     ManagedBy   = "Terraform"
   }
 }
+# -----------------------------------------------------------------------------
+# LECCIÓN 3: GOBERNANZA Y CUMPLIMIENTO (AWS Config)
+# -----------------------------------------------------------------------------
+
+# 1. Obtener el LabRole precreado por AWS Academy
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
+
+# -----------------------------------------------------------------------------
+# REGLAS DE CUMPLIMIENTO (AWS Config Managed Rules)
+# -----------------------------------------------------------------------------
+
+# Regla 1: Validar que todos los buckets S3 tengan Bloqueo de Acceso Público
+resource "aws_config_config_rule" "s3_bucket_public_read_prohibited" {
+  name        = "s3-bucket-public-read-prohibited"
+  description = "Evalua si los buckets S3 prohiben el acceso publico de lectura."
+
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_PUBLIC_READ_PROHIBITED"
+  }
+}
+
+# Regla 2: Validar que el cifrado en reposo esté habilitado en S3
+resource "aws_config_config_rule" "s3_bucket_server_side_encryption_enabled" {
+  name        = "s3-bucket-server-side-encryption-enabled"
+  description = "Evalua si los buckets S3 tienen el cifrado en reposo habilitado."
+
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
+  }
+}
