@@ -69,6 +69,10 @@ resource "aws_cloudtrail" "audit_trail" {
   is_multi_region_trail         = false
   enable_logging                = true
 
+  # --- AGREGAR ESTAS DOS LÍNEAS PARA LA LECCIÓN 4 ---
+  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail_log_group.arn}:*"
+  cloud_watch_logs_role_arn     = data.aws_iam_role.lab_role.arn
+
   depends_on = [aws_s3_bucket_policy.cloudtrail_s3_policy]
 
   tags = {
@@ -110,4 +114,70 @@ resource "aws_config_config_rule" "s3_bucket_server_side_encryption_enabled" {
     owner             = "AWS"
     source_identifier = "S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED"
   }
+}
+
+# -----------------------------------------------------------------------------
+# LECCIÓN 4: MONITOREO ACTIVO Y ALARMAS (CloudWatch & SNS)
+# -----------------------------------------------------------------------------
+
+# 1. Grupo de Logs en CloudWatch para recibir auditoría de CloudTrail
+resource "aws_cloudwatch_log_group" "cloudtrail_log_group" {
+  name              = "/aws/cloudtrail/blue-wave-audit-logs"
+  retention_in_days = 7
+
+  tags = {
+    Environment = "Bootcamp-Cloud"
+    Project     = "Cloud Secure"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# 2. Actualización de CloudTrail para enviar eventos a CloudWatch Logs
+# (Aprovecha la declaración de aws_cloudtrail.audit_trail en la Lección 2)
+# Nota: Asegúrate de vincular los parámetros de CloudWatch en tu recurso aws_cloudtrail existente:
+# cloudwatch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail_log_group.arn}:*"
+# cloudwatch_logs_role_arn  = data.aws_iam_role.lab_role.arn
+
+# 3. Tema de Notificación SNS para Alertas de Seguridad
+resource "aws_sns_topic" "security_alerts" {
+  name = "blue-wave-security-alerts"
+}
+
+# 4. Suscripción por Correo Electrónico al Tema SNS
+# Reemplaza 'tu-correo@ejemplo.com' por tu dirección de correo real
+resource "aws_sns_topic_subscription" "email_subscription" {
+  topic_arn = aws_sns_topic.security_alerts.arn
+  protocol  = "email"
+  endpoint  = "jairojohanjairojohan@gmail.com"
+}
+
+# -----------------------------------------------------------------------------
+# FILTROS DE MÉTRICAS Y ALARMAS
+# -----------------------------------------------------------------------------
+
+# Filtro 1: Detectar llamadas denegadas en la API (AccessDenied / UnauthorizedOperation)
+resource "aws_cloudwatch_log_metric_filter" "unauthorized_api_calls" {
+  name           = "UnauthorizedApiCallsFilter"
+  pattern        = "{ ($.errorCode = \"*UnauthorizedOperation\") || ($.errorCode = \"AccessDenied*\") }"
+  log_group_name = aws_cloudwatch_log_group.cloudtrail_log_group.name
+
+  metric_transformation {
+    name      = "UnauthorizedApiCallsCount"
+    namespace = "BlueWave/Security"
+    value     = "1"
+  }
+}
+
+# Alarma 1: Disparar alerta si hay llamadas denegadas en la API
+resource "aws_cloudwatch_metric_alarm" "unauthorized_api_calls_alarm" {
+  alarm_name          = "blue-wave-unauthorized-api-calls-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.unauthorized_api_calls.metric_transformation[0].name
+  namespace           = aws_cloudwatch_log_metric_filter.unauthorized_api_calls.metric_transformation[0].namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "Esta alarma se dispara cuando se detectan intentos no autorizados o llamadas denegadas en la API de AWS."
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
 }
