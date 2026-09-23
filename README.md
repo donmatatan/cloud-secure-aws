@@ -94,7 +94,7 @@ terraform apply
 ```text
 .
 ├── README.md                  # Información principal del repositorio
-├── Enunciado de proyecto.pdf  # Pautas y requerimientos académicos
+├── Enunciado de proyecto.pdf  # Enunciado del proyecto como tal. Se describe todo lo solicitado.
 ├── aws-cli.sh                 # Script inicial para aprovisionar buckets S3 base
 ├── docs/                      # Documentación del proyecto (diagramas, capturas e informe técnico)
 └── terraform/                 # Archivos de configuración de Terraform (.tf)
