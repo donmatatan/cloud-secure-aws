@@ -104,4 +104,4 @@ terraform apply
 
 ## 7. Conclusiones
 
-Este ejercicio sirvió para aplicar buenas prácticas de seguridad e Infraestructura como Código sobre AWS, pero también para enfrentarse a problemas de permisos y limitaciones reales de entorno. La solución final entrega una arquitectura auditable, con monitoreo activo ante accesos no autorizados y con un uso adaptado de IaC para superar las barreras técnicas del laboratorio.
+Este proyecto sirvió para aplicar buenas prácticas de seguridad e Infraestructura como Código sobre AWS, pero también para enfrentarse a problemas de permisos y limitaciones reales de entorno. La solución final entrega una arquitectura auditable, con monitoreo activo ante accesos no autorizados y con un uso adaptado de IaC para superar las barreras técnicas del laboratorio.
